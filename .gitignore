@@ -1,0 +1,9 @@
+*.pyc
+__pycache__/
+.buildozer/
+bin/
+.idea/
+.vscode/
+venv/
+*.spec
+!buildozer.spec

@@ -1,0 +1,190 @@
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.spinner import Spinner
+from kivy.core.window import Window
+import math
+
+# 安装必要的包
+!apt-get update
+!apt-get install -y python3-pip build-essential git python3 python3-dev ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
+
+# 安装 buildozer
+!pip install buildozer
+
+# 创建项目目录结构
+!mkdir material_calculator
+%cd material_calculator
+
+# 创建 main.py
+%%writefile main.py
+import tkinter as tk
+from tkinter import ttk, messagebox
+import math
+
+# 定义材料密度（单位：g/cm³）
+material_densities = {
+    "铝": 2.7,
+    "铜": 8.96,
+    "铁": 7.874,
+    "金": 19.3,
+    "银": 10.49,
+    "铅": 11.34
+}
+
+# 计算质量的函数
+def calculate_mass(volume, density):
+    return volume * density
+
+# 计算体积的函数
+def calculate_volume(shape, dimensions):
+    if shape == "长方体":
+        length, width, height = dimensions
+        return (length * width * height) / 1000  # mm³ 转换为 cm³
+    elif shape == "圆柱体":
+        diameter, height = dimensions
+        radius = diameter / 2
+        return (math.pi * radius**2 * height) / 1000  # mm³ 转换为 cm³
+    elif shape == "圆管":
+        outer_diameter, inner_diameter, height = dimensions
+        outer_radius = outer_diameter / 2
+        inner_radius = inner_diameter / 2
+        return (math.pi * (outer_radius**2 - inner_radius**2) * height) / 1000  # mm³ 转换为 cm³
+    else:
+        return 0
+
+# 计算按钮的回调函数
+def calculate():
+    try:
+        shape = shape_combobox.get()
+        material = material_combobox.get()
+
+        if material not in material_densities:
+            messagebox.showerror("错误", "无效的材料名称")
+            return
+
+        if shape == "长方体":
+            length = float(entry_length.get())
+            width = float(entry_width.get())
+            height = float(entry_height.get())
+            dimensions = (length, width, height)
+        elif shape == "圆柱体":
+            diameter = float(entry_diameter.get())
+            height = float(entry_height.get())
+            dimensions = (diameter, height)
+        elif shape == "圆管":
+            outer_diameter = float(entry_outer_diameter.get())
+            inner_diameter = float(entry_inner_diameter.get())
+            height = float(entry_height.get())
+            dimensions = (outer_diameter, inner_diameter, height)
+        else:
+            messagebox.showerror("错误", "无效的形状")
+            return
+
+        volume = calculate_volume(shape, dimensions)
+        density = material_densities[material]
+        mass = calculate_mass(volume, density) / 1000  # 将质量从克转换为千克
+
+        label_result.config(text=f"质量: {mass:.2f} 千克")
+    except ValueError:
+        messagebox.showerror("错误", "无效的输入")
+
+# 更新输入字段
+def update_fields(event):
+    shape = shape_combobox.get()
+    if shape == "长方体":
+        label_length.grid(row=1, column=0, padx=10, pady=10)
+        entry_length.grid(row=1, column=1, padx=10, pady=10)
+        label_width.grid(row=2, column=0, padx=10, pady=10)
+        entry_width.grid(row=2, column=1, padx=10, pady=10)
+        label_height.grid(row=3, column=0, padx=10, pady=10)
+        entry_height.grid(row=3, column=1, padx=10, pady=10)
+        label_diameter.grid_forget()
+        entry_diameter.grid_forget()
+        label_outer_diameter.grid_forget()
+        entry_outer_diameter.grid_forget()
+        label_inner_diameter.grid_forget()
+        entry_inner_diameter.grid_forget()
+    elif shape == "圆柱体":
+        label_length.grid_forget()
+        entry_length.grid_forget()
+        label_width.grid_forget()
+        entry_width.grid_forget()
+        label_height.grid(row=3, column=0, padx=10, pady=10)
+        entry_height.grid(row=3, column=1, padx=10, pady=10)
+        label_diameter.grid(row=1, column=0, padx=10, pady=10)
+        entry_diameter.grid(row=1, column=1, padx=10, pady=10)
+        label_outer_diameter.grid_forget()
+        entry_outer_diameter.grid_forget()
+        label_inner_diameter.grid_forget()
+        entry_inner_diameter.grid_forget()
+    elif shape == "圆管":
+        label_length.grid_forget()
+        entry_length.grid_forget()
+        label_width.grid_forget()
+        entry_width.grid_forget()
+        label_height.grid(row=3, column=0, padx=10, pady=10)
+        entry_height.grid(row=3, column=1, padx=10, pady=10)
+        label_diameter.grid_forget()
+        entry_diameter.grid_forget()
+        label_outer_diameter.grid(row=1, column=0, padx=10, pady=10)
+        entry_outer_diameter.grid(row=1, column=1, padx=10, pady=10)
+        label_inner_diameter.grid(row=2, column=0, padx=10, pady=10)
+        entry_inner_diameter.grid(row=2, column=1, padx=10, pady=10)
+
+# 创建主窗口
+root = tk.Tk()
+root.title("金峡能源-材料计算器")
+root.geometry("400x450")  # 增加窗口高度以确保版权信息可见
+
+# 创建并放置控件
+tk.Label(root, text="形状:").grid(row=0, column=0, padx=10, pady=10)
+shape_combobox = ttk.Combobox(root, values=["长方体", "圆柱体", "圆管"])
+shape_combobox.grid(row=0, column=1, padx=10, pady=10)
+shape_combobox.bind("<<ComboboxSelected>>", update_fields)
+
+label_length = tk.Label(root, text="长度 (mm):")
+entry_length = tk.Entry(root)
+
+label_width = tk.Label(root, text="宽度 (mm):")
+entry_width = tk.Entry(root)
+
+label_height = tk.Label(root, text="高度 (mm):")
+entry_height = tk.Entry(root)
+
+label_diameter = tk.Label(root, text="直径 (mm):")
+entry_diameter = tk.Entry(root)
+
+label_outer_diameter = tk.Label(root, text="外径 (mm):")
+entry_outer_diameter = tk.Entry(root)
+
+label_inner_diameter = tk.Label(root, text="内径 (mm):")
+entry_inner_diameter = tk.Entry(root)
+
+tk.Label(root, text="材料:").grid(row=4, column=0, padx=10, pady=10)
+material_combobox = ttk.Combobox(root, values=list(material_densities.keys()))
+material_combobox.grid(row=4, column=1, padx=10, pady=10)
+
+calculate_button = tk.Button(root, text="计算", command=calculate)
+calculate_button.grid(row=5, column=0, columnspan=2, pady=20)
+
+label_result = tk.Label(root, text="质量: ")
+label_result.grid(row=6, column=0, columnspan=2, pady=10)
+
+# 添加版权信息
+copyright_text = "©版权所有：金峡能源装备有限公司"
+label_copyright = tk.Label(root, text=copyright_text, font=("Arial", 10))
+label_copyright.grid(row=7, column=0, columnspan=2, pady=10)
+
+# 运行主循环
+root.mainloop()
+
+# 构建 APK
+!buildozer android debug
+
+# 下载生成的 APK
+from google.colab import files
+files.download('bin/material_calculator-0.1-debug.apk')
